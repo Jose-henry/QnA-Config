@@ -1,0 +1,9 @@
+prometheus:
+  prometheusSpec:
+    additionalScrapeConfigs:
+      - job_name: 'qna-service'
+        static_configs:
+          - targets: ['qna-service.default.svc.cluster.local:8000']
+      - job_name: 'rag-service'
+        static_configs:
+          - targets: ['rag-service.default.svc.cluster.local:8001']

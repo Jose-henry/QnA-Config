@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rag-deployment
+  labels:
+    app: rag
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: rag
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8001"
+        prometheus.io/path: "/metrics"
+      labels:
+        app: rag
+    spec:
+      containers:
+        - name: rag
+          image: rag-image:5.0
+          ports:
+            - containerPort: 8001
+          resources:
+            requests:
+              cpu: "100m"
+            limits:
+              cpu: "500m"
+          env:
+            - name: ENABLE_METRICS
+              value: "true"
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: agents-secret
+                  key: OPENAI_API_KEY
+            - name: GROQ_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: agents-secret
+                  key: GROQ_API_KEY
+            - name: YUGABYTE_DB_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: agents-configmap
+                  key: YUGABYTE_DB_URL
+            - name: MODEL
+              valueFrom:
+                configMapKeyRef:
+                  name: agents-configmap
+                  key: MODEL
+            - name: RAG_AGENT_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: agents-configmap
+                  key: RAG_AGENT_URL
+            - name: OPENAI_MODEL_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: agents-configmap
+                  key: OPENAI_MODEL_NAME
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rag-service
+spec:
+  selector:
+    app: rag
+  ports:
+    - protocol: TCP
+      port: 8001
+      targetPort: 8001
+
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: rag-scaledobject
+  namespace: default
+spec:
+  scaleTargetRef:
+    name: rag-deployment
+  minReplicaCount: 2
+  maxReplicaCount: 10
+  pollingInterval: 15
+  cooldownPeriod: 60
+  triggers:
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus-server.default.svc.cluster.local
+        metricName: http_requests_total
+        threshold: '0.5'
+        query: |
+          sum(rate(http_requests_total{job="rag-service", method="POST", handler="/query"}[1m]))
+    - type: cpu
+      metadata:
+        type: Utilization
+        value: "25"
