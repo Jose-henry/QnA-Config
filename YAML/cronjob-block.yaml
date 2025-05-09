@@ -15,5 +15,5 @@ spec:
               command:
                 - "/bin/sh"
                 - "-c"
-                - "kubectl apply -f https://raw.githubusercontent.com/Jose-henry/LangGraph-AI-Agents/main/qna-rag-NetworkPolicy.yaml"
+                - "kubectl apply -f https://raw.githubusercontent.com/Jose-henry/QnA-Config/main/YAML/qna-rag-NetworkPolicy.yaml"
           restartPolicy: OnFailure
