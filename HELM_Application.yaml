@@ -11,7 +11,7 @@ spec:
     path: HELM/my_agents
     chart: my_agents
     helm:
-      releaseName: my-agents
+      releaseName: agents
       valueFiles:
         - values.yaml
   destination:
