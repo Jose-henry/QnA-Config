@@ -1,0 +1,23 @@
+{{- if .Values.cronjobs.block.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "my_agents.fullname" . }}-block
+  labels:
+    {{- include "my_agents.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.cronjobs.block.schedule | quote }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: cronjob-sa  # Allows API access
+          containers:
+            - name: kubectl
+              image: bitnami/kubectl
+              command:
+                - "/bin/sh"
+                - "-c"
+                - "kubectl apply -f https://raw.githubusercontent.com/Jose-henry/QnA-Config/main/YAML/qna-rag-NetworkPolicy.yaml"
+          restartPolicy: OnFailure
+{{- end }} 

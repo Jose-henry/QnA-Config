@@ -1,0 +1,113 @@
+{{- if .Values.qna.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "my_agents.fullname" . }}-qna
+  labels:
+    {{- include "my_agents.labels" . | nindent 4 }}
+    app.kubernetes.io/component: qna
+spec:
+  replicas: {{ .Values.qna.replicas }}
+  selector:
+    matchLabels:
+      {{- include "my_agents.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: qna
+  template:
+    metadata:
+      annotations:
+        {{- if .Values.qna.metrics.enabled }}
+        prometheus.io/scrape: "true"
+        prometheus.io/port: {{ .Values.qna.metrics.port | quote }}
+        prometheus.io/path: {{ .Values.qna.metrics.path | quote }}
+        {{- end }}
+      labels:
+        {{- include "my_agents.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: qna
+    spec:
+      containers:
+        - name: qna
+          image: "{{ .Values.global.qnaImage.repository }}:{{ .Values.global.qnaImage.tag }}"
+          imagePullPolicy: {{ .Values.global.qnaImage.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.qna.service.targetPort }}
+          resources:
+            {{- toYaml .Values.qna.resources | nindent 12 }}
+          env:
+            - name: ENABLE_METRICS
+              value: {{ .Values.qna.metrics.enabled | quote }}
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "my_agents.fullname" . }}-secret
+                  key: OPENAI_API_KEY
+            - name: GROQ_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "my_agents.fullname" . }}-secret
+                  key: GROQ_API_KEY
+            - name: YUGABYTE_DB_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "my_agents.fullname" . }}-config
+                  key: YUGABYTE_DB_URL
+            - name: MODEL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "my_agents.fullname" . }}-config
+                  key: MODEL
+            - name: RAG_AGENT_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "my_agents.fullname" . }}-config
+                  key: RAG_AGENT_URL
+            - name: OPENAI_MODEL_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "my_agents.fullname" . }}-config
+                  key: OPENAI_MODEL_NAME
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "my_agents.fullname" . }}-qna
+  labels:
+    {{- include "my_agents.labels" . | nindent 4 }}
+    app.kubernetes.io/component: qna
+spec:
+  selector:
+    {{- include "my_agents.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: qna
+  ports:
+    - protocol: TCP
+      port: {{ .Values.qna.service.port }}
+      targetPort: {{ .Values.qna.service.targetPort }}
+---
+{{- if .Values.qna.autoscaling.enabled }}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ include "my_agents.fullname" . }}-qna-scaledobject
+  labels:
+    {{- include "my_agents.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    name: {{ include "my_agents.fullname" . }}-qna
+  minReplicaCount: {{ .Values.qna.autoscaling.minReplicas }}
+  maxReplicaCount: {{ .Values.qna.autoscaling.maxReplicas }}
+  pollingInterval: 15
+  cooldownPeriod: 60
+  triggers:
+    {{- if .Values.qna.autoscaling.prometheus }}
+    - type: prometheus
+      metadata:
+        serverAddress: {{ .Values.qna.autoscaling.prometheus.serverAddress | quote }}
+        metricName: {{ .Values.qna.autoscaling.prometheus.metricName | quote }}
+        threshold: {{ .Values.qna.autoscaling.prometheus.threshold | quote }}
+        query: {{ .Values.qna.autoscaling.prometheus.query | quote }}
+    {{- end }}
+    - type: cpu
+      metadata:
+        type: Utilization
+        value: {{ .Values.qna.autoscaling.targetCPUUtilizationPercentage | quote }}
+{{- end }}
+{{- end }} 

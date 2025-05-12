@@ -1,0 +1,18 @@
+{{- if .Values.gatekeeper.enabled }}
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sDisallowedTags
+metadata:
+  name: {{ include "my_agents.fullname" . }}-disallowed-tags
+  labels:
+    {{- include "my_agents.labels" . | nindent 4 }}
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+    namespaces:
+      {{- toYaml .Values.gatekeeper.namespaces | nindent 6 }}
+  parameters:
+    tags: {{ .Values.gatekeeper.disallowedTags | toYaml | nindent 4 }}
+    exemptImages: {{ .Values.gatekeeper.exemptImages | toYaml | nindent 4 }}
+{{- end }} 

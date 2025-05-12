@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "my_agents.fullname" . }}-config
+  labels:
+    {{- include "my_agents.labels" . | nindent 4 }}
+data:
+  YUGABYTE_DB_URL: {{ .Values.config.yugabyteDbUrl | quote }}
+  RAG_AGENT_URL: {{ .Values.config.ragAgentUrl | quote }}
+  MODEL: {{ .Values.config.model | quote }}
+  OPENAI_MODEL_NAME: {{ .Values.config.openaiModelName | quote }} 

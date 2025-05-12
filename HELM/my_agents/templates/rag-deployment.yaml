@@ -1,0 +1,113 @@
+{{- if .Values.rag.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "my_agents.fullname" . }}-rag
+  labels:
+    {{- include "my_agents.labels" . | nindent 4 }}
+    app.kubernetes.io/component: rag
+spec:
+  replicas: {{ .Values.rag.replicas }}
+  selector:
+    matchLabels:
+      {{- include "my_agents.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: rag
+  template:
+    metadata:
+      annotations:
+        {{- if .Values.rag.metrics.enabled }}
+        prometheus.io/scrape: "true"
+        prometheus.io/port: {{ .Values.rag.metrics.port | quote }}
+        prometheus.io/path: {{ .Values.rag.metrics.path | quote }}
+        {{- end }}
+      labels:
+        {{- include "my_agents.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: rag
+    spec:
+      containers:
+        - name: rag
+          image: "{{ .Values.global.ragImage.repository }}:{{ .Values.global.ragImage.tag }}"
+          imagePullPolicy: {{ .Values.global.ragImage.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.rag.service.targetPort }}
+          resources:
+            {{- toYaml .Values.rag.resources | nindent 12 }}
+          env:
+            - name: ENABLE_METRICS
+              value: {{ .Values.rag.metrics.enabled | quote }}
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "my_agents.fullname" . }}-secret
+                  key: OPENAI_API_KEY
+            - name: GROQ_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "my_agents.fullname" . }}-secret
+                  key: GROQ_API_KEY
+            - name: YUGABYTE_DB_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "my_agents.fullname" . }}-config
+                  key: YUGABYTE_DB_URL
+            - name: MODEL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "my_agents.fullname" . }}-config
+                  key: MODEL
+            - name: RAG_AGENT_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "my_agents.fullname" . }}-config
+                  key: RAG_AGENT_URL
+            - name: OPENAI_MODEL_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "my_agents.fullname" . }}-config
+                  key: OPENAI_MODEL_NAME
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "my_agents.fullname" . }}-rag
+  labels:
+    {{- include "my_agents.labels" . | nindent 4 }}
+    app.kubernetes.io/component: rag
+spec:
+  selector:
+    {{- include "my_agents.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: rag
+  ports:
+    - protocol: TCP
+      port: {{ .Values.rag.service.port }}
+      targetPort: {{ .Values.rag.service.targetPort }}
+---
+{{- if .Values.rag.autoscaling.enabled }}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ include "my_agents.fullname" . }}-rag-scaledobject
+  labels:
+    {{- include "my_agents.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    name: {{ include "my_agents.fullname" . }}-rag
+  minReplicaCount: {{ .Values.rag.autoscaling.minReplicas }}
+  maxReplicaCount: {{ .Values.rag.autoscaling.maxReplicas }}
+  pollingInterval: 15
+  cooldownPeriod: 60
+  triggers:
+    {{- if .Values.rag.autoscaling.prometheus }}
+    - type: prometheus
+      metadata:
+        serverAddress: {{ .Values.rag.autoscaling.prometheus.serverAddress | quote }}
+        metricName: {{ .Values.rag.autoscaling.prometheus.metricName | quote }}
+        threshold: {{ .Values.rag.autoscaling.prometheus.threshold | quote }}
+        query: {{ .Values.rag.autoscaling.prometheus.query | quote }}
+    {{- end }}
+    - type: cpu
+      metadata:
+        type: Utilization
+        value: {{ .Values.rag.autoscaling.targetCPUUtilizationPercentage | quote }}
+{{- end }}
+{{- end }} 

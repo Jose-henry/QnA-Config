@@ -1,0 +1,37 @@
+Thank you for installing {{ .Chart.Name }}.
+
+Your AI Agents are now being deployed!
+
+To verify the deployment status, run:
+  kubectl get pods -l "app.kubernetes.io/instance={{ .Release.Name }}"
+
+The following services are available:
+
+RAG Agent:
+  Service URL: http://{{ include "my_agents.fullname" . }}-rag:{{ .Values.rag.service.port }}
+  Metrics: http://{{ include "my_agents.fullname" . }}-rag:{{ .Values.rag.metrics.port }}{{ .Values.rag.metrics.path }}
+
+QnA Agent:
+  Service URL: http://{{ include "my_agents.fullname" . }}-qna:{{ .Values.qna.service.port }}
+  Metrics: http://{{ include "my_agents.fullname" . }}-qna:{{ .Values.qna.metrics.port }}{{ .Values.qna.metrics.path }}
+
+{{- if .Values.ingress.enabled }}
+Ingress is enabled. You can access the services at:
+{{- range .Values.ingress.hosts }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host }}
+{{- end }}
+{{- end }}
+
+Configuration:
+  - ConfigMap: {{ include "my_agents.fullname" . }}-config
+  - Secrets: {{ include "my_agents.fullname" . }}-secret
+
+Autoscaling is {{ if .Values.rag.autoscaling.enabled }}enabled{{ else }}disabled{{ end }} for RAG Agent
+Autoscaling is {{ if .Values.qna.autoscaling.enabled }}enabled{{ else }}disabled{{ end }} for QnA Agent
+
+To view the logs:
+  kubectl logs -l "app.kubernetes.io/instance={{ .Release.Name }},app.kubernetes.io/component=rag"
+  kubectl logs -l "app.kubernetes.io/instance={{ .Release.Name }},app.kubernetes.io/component=qna"
+
+For more information about the deployment, visit:
+  https://github.com/your-org/my_agents 

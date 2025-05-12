@@ -1,0 +1,129 @@
+# Global settings
+global:
+  ragImage:
+    repository: rag-image
+    tag: "5.0"
+    pullPolicy: IfNotPresent
+  qnaImage:
+    repository: qna-image
+    tag: "5.0"
+    pullPolicy: IfNotPresent
+
+# Gatekeeper Configuration
+gatekeeper:
+  enabled: true
+  namespaces:
+    - "default"
+  disallowedTags:
+    - "latest"
+  exemptImages:
+    - "openpolicyagent/opa-exp:latest"
+    - "openpolicyagent/opa-exp2:latest"
+
+# Secrets Configuration
+secrets:
+  enabled: true
+  type: Opaque
+  data:
+    OPENAI_API_KEY: "c2stWkNuQ3ktNWZoQ1dqbjlOOWxjYkh4elF3Q2JIdXZ2RlNTTFlYaXV0T1hyVDNCbGJrRkowQl9DUi1GaEZUSmd5bmtQTEowSmZhazZ2YkI1cm84SjJmbzEwR3h3RUE="  # Base64 encoded value
+    GROQ_API_KEY: "Z3NrXzJ3NWFyQ2F6MzRUaDA2dkcyVUh6V0dkeWIzRllEcUR6T29aS0dSQ3ZxSkRNckhjMElyR3M="    # Base64 encoded value
+
+# RAG Agent Configuration
+rag:
+  enabled: true
+  replicas: 2
+  resources:
+    requests:
+      cpu: "100m"
+    limits:
+      cpu: "500m"
+  service:
+    port: 8001
+    targetPort: 8001
+  metrics:
+    enabled: true
+    port: 8001
+    path: "/metrics"
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 25
+    prometheus:
+      serverAddress: "http://prometheus-server.default.svc.cluster.local"
+      metricName: "http_requests_total"
+      threshold: "0.5"
+      query: 'sum(rate(http_requests_total{job="rag-service", method="POST", handler="/query"}[1m]))'
+
+# QnA Agent Configuration
+qna:
+  enabled: true
+  replicas: 2
+  resources:
+    requests:
+      cpu: "100m"
+    limits:
+      cpu: "500m"
+  service:
+    port: 8000
+    targetPort: 8000
+  metrics:
+    enabled: true
+    port: 8000
+    path: "/metrics"
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 25
+    prometheus:
+      serverAddress: "http://prometheus-server.default.svc.cluster.local"
+      metricName: "http_requests_total"
+      threshold: "0.5"
+      query: 'sum(rate(http_requests_total{job="qna-service", method="POST", handler="/query"}[1m]))'
+
+# Configuration
+config:
+  yugabyteDbUrl: "postgresql://yugabyte:rantya2018@yb-tserver-service.yb-demo.svc.cluster.local:5433/yugabyte?sslmode=disable"
+  ragAgentUrl: "http://apisix-gateway.apisix.svc.cluster.local"
+  model: "openai/gpt-4o-mini"
+  openaiModelName: "gpt-4o-mini"
+
+# Ingress Configuration
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations: {}
+  hosts:
+    - host: qna-rag-agent.com
+      paths:
+        - path: /
+          pathType: Prefix
+        - path: /query
+          pathType: Prefix
+
+# Network Policy
+networkPolicy:
+  enabled: true
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: qna
+      ports:
+        - protocol: TCP
+          port: 8001
+
+# CronJobs
+cronjobs:
+  block:
+    enabled: true
+    schedule: "0 0 * * *"
+  unblock:
+    enabled: true
+    schedule: "0 12 * * *"
+
+# Prometheus Configuration
+prometheus:
+  enabled: true
+  serverAddress: "http://prometheus-server.default.svc.cluster.local"
