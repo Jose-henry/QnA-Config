@@ -76,27 +76,27 @@ spec:
       targetPort: 8001
 
 ---
-# apiVersion: keda.sh/v1alpha1
-# kind: ScaledObject
-# metadata:
-#   name: rag-scaledobject
-#   namespace: default
-# spec:
-#   scaleTargetRef:
-#     name: rag-deployment
-#   minReplicaCount: 2
-#   maxReplicaCount: 10
-#   pollingInterval: 15
-#   cooldownPeriod: 60
-#   triggers:
-#     - type: prometheus
-#       metadata:
-#         serverAddress: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local
-#         metricName: http_requests_total
-#         threshold: '0.5'
-#         query: |
-#           sum(rate(http_requests_total{job="rag-service", method="POST", handler="/query"}[1m]))
-#     - type: cpu
-#       metadata:
-#         type: Utilization
-#         value: "25"
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: rag-scaledobject
+  namespace: default
+spec:
+  scaleTargetRef:
+    name: rag-deployment
+  minReplicaCount: 2
+  maxReplicaCount: 10
+  pollingInterval: 15
+  cooldownPeriod: 60
+  triggers:
+    - type: prometheus
+      metadata:
+        serverAddress: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local
+        metricName: http_requests_total
+        threshold: '0.5'
+        query: |
+          sum(rate(http_requests_total{job="rag-service", method="POST", handler="/query"}[1m]))
+    - type: cpu
+      metadata:
+        type: Utilization
+        value: "25"
