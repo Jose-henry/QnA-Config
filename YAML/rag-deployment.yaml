@@ -95,7 +95,7 @@ spec:
         metricName: http_requests_total
         threshold: '0.5'
         query: |
-          sum(rate(http_requests_total{handler="/query", method="POST"}[1m]))
+          sum(rate(http_requests_total[2m]))
     - type: cpu
       metadata:
         type: Utilization
