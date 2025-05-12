@@ -95,7 +95,7 @@ ingress:
   className: "nginx"
   annotations: {}
   hosts:
-    - host: qna-rag-agent.com
+    - host: example-agent.com
       paths:
         - path: /
           pathType: Prefix
