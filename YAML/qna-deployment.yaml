@@ -91,7 +91,7 @@ spec:
   triggers:
     - type: prometheus
       metadata:
-        serverAddress: http://prometheus-server.default.svc.cluster.local
+        serverAddress: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local
         metricName: http_requests_total
         threshold: '0.5'
         query: |

@@ -126,4 +126,4 @@ cronjobs:
 # Prometheus Configuration
 prometheus:
   enabled: true
-  serverAddress: "http://prometheus-server.default.svc.cluster.local"
+  serverAddress: "http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local"
