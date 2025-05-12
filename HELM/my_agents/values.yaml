@@ -53,7 +53,7 @@ rag:
       serverAddress: "http://prometheus-server.default.svc.cluster.local"
       metricName: "http_requests_total"
       threshold: "0.5"
-      query: 'sum(rate(http_requests_total{job="rag-service", method="POST", handler="/query"}[1m]))'
+      query: 'sum(rate(http_requests_total[2m]))'
 
 # QnA Agent Configuration
 qna:
@@ -80,7 +80,7 @@ qna:
       serverAddress: "http://prometheus-server.default.svc.cluster.local"
       metricName: "http_requests_total"
       threshold: "0.5"
-      query: 'sum(rate(http_requests_total{job="qna-service", method="POST", handler="/query"}[1m]))'
+      query: 'sum(rate(http_requests_total[2m]))'
 
 # Configuration
 config:

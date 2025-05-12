@@ -11,7 +11,6 @@ spec:
     spec:
       template:
         spec:
-          serviceAccountName: cronjob-sa  # Allows API access
           containers:
             - name: kubectl
               image: bitnami/kubectl
