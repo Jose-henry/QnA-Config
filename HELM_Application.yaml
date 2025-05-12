@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/Jose-henry/QnA-Config.git
-    targetRevision: HEAD
+    targetRevision: main
     path: HELM/my_agents
     chart: my_agents
     helm:

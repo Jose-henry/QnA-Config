@@ -1,5 +1,5 @@
 apiVersion: v2
-name: my_agents
+name: my-agents
 description: A Helm chart for deploying AI Agents (RAG and QnA) with autoscaling and monitoring
 type: application
 version: 0.1.0
